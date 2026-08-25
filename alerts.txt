@@ -1,2 +1,0 @@
-ALERT:[Unauthorized SSH Access] from IP:10.0.0.15
-ALERT:[Port Scan Detected] from IP:192.168.1.50
