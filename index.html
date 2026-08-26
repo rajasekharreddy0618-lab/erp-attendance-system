@@ -24,7 +24,6 @@
             border-radius: 8px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
             width: 100%;
-            overflow: visible; 
         }
         
         input, button { 
@@ -63,30 +62,36 @@
         }
         .delete-btn:hover { background: #ef4444; }
         
+        /* Responsive Table Container */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             margin-top: 10px;
-            display:block;
         }
 
         table { 
             width: 100%; 
             border-collapse: collapse; 
-            min-width: 650px; 
+            min-width: 600px; 
         }
         
         th, td { 
             border: 1px solid #334155; 
-            padding: 8px; 
+            padding: 10px; 
             text-align: left; 
             font-size: 0.85rem;
             color: #f1f5f9;
-            background:#1e2936;
+            background: #1e293b;
         }
         
         th { background-color: #334155; }
+
+        @media (min-width: 600px) {
+            body { padding: 30px; }
+            h1 { font-size: 2rem; }
+            .card { padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -98,8 +103,8 @@
         <h2>Add Credit Entry</h2>
         <input type="text" id="customerName" placeholder="Customer Name (e.g. Raju)">
         <input type="text" id="productName" placeholder="Product Name (e.g. Milk)">
-        <input type="number" id="quantity" placeholder="Quantity(e.g 1)" min="1">
-        <input type="number" id="unitPrice" placeholder="Unit Price (₹)" step="0.1">
+        <input type="number" id="quantity" placeholder="Quantity (e.g. 1)" min="1">
+        <input type="number" id="unitPrice" placeholder="Unit Price in ₹ (e.g. 10)" step="0.1">
         <button onclick="addCredit()">Save Credit</button>
         <p id="addResponse" style="font-weight: bold; margin-top: 10px;"></p>
     </div>
@@ -108,65 +113,76 @@
     <div class="card">
         <h2>All Active Credits</h2>
         <button onclick="fetchAllCredits()">🔄 Refresh List</button>
-        <table id="creditTable">
-            <thead>
-                <tr>
-                    <th>Customer</th>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Total Bill</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Rows will be injected dynamically -->
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table id="creditTable">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Total Bill</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Rows will be injected dynamically -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
+        // Replace with your live Render backend URL
         const API_URL = "https://shop-credit-backend.onrender.com";
 
         async function addCredit() {
-            const customer = document.getElementById("customerName").value;
-            const product = document.getElementById("productName").value;
-            const qty = parseInt(document.getElementById("quantity").value);
-            const price = parseFloat(document.getElementById("unitPrice").value);
-            const msgEl = document.getElementById("addResponse");
+            const customer = document.getElementById("customerName").value.trim();
+            const product = document.getElementById("productName").value.trim();
+            const quantity = document.getElementById("quantity").value;
+            const unitPrice = document.getElementById("unitPrice").value;
+            const responseMessage = document.getElementById("addResponse");
 
-            const payload = {
-                "Customer_Name": customer,
-                "Total_List": [
-                    {
-                        "product_Name": product,
-                        "Quantity": qty,
-                        "Unit_prize": price
-                    }
-                ]
-            };
+            if (!customer || !product || !quantity || !unitPrice) {
+                responseMessage.style.color = "#f87171";
+                responseMessage.innerText = "Please fill in all fields!";
+                return;
+            }
 
             try {
                 const response = await fetch(`${API_URL}/Calculate_Bill`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        Customer_Name: customer,
+                        Product_Name: product,
+                        Quantity: parseInt(quantity),
+                        Unit_Prize: parseFloat(unitPrice)
+                    })
                 });
-                const data = await response.json();
 
                 if (response.ok) {
-                    msgEl.style.color = "green";
-                    msgEl.innerText = "Credit recorded successfully!";
+                    responseMessage.style.color = "#38bdf8";
+                    responseMessage.innerText = "Credit recorded successfully!";
+                    
+                    // Clear inputs
                     document.getElementById("customerName").value = "";
                     document.getElementById("productName").value = "";
+                    document.getElementById("quantity").value = "";
+                    document.getElementById("unitPrice").value = "";
+
+                    // Automatically refresh the table to display the new entry instantly
                     fetchAllCredits();
                 } else {
-                    msgEl.style.color = "red";
-                    msgEl.innerText = "Error: " + JSON.stringify(data.detail || data);
+                    responseMessage.style.color = "#f87171";
+                    responseMessage.innerText = "Failed to record credit. Try again.";
                 }
             } catch (error) {
-                msgEl.style.color = "red";
-                msgEl.innerText = "Connection failed to backend!";
+                console.error("Error:", error);
+                responseMessage.style.color = "#f87171";
+                responseMessage.innerText = "Connection error to backend!";
             }
         }
 
@@ -174,49 +190,40 @@
             try {
                 const response = await fetch(`${API_URL}/Get_all_credits`);
                 const data = await response.json();
+                
                 const tbody = document.querySelector("#creditTable tbody");
                 tbody.innerHTML = "";
 
-                // Matches exact key name from your GET endpoint dictionary return
-                const records = data["All crdeits"];
+                const records = data["All crdeits"] || data.credits || [];
 
-                if (records && records.length > 0) {
-                    records.forEach(record => {
-                        const row = document.createElement("tr");
-                        row.innerHTML = `
-                            <td>${record["Customer_Name"]}</td>
-                            <td>${record["Product_Name"]}</td>
-                            <td>${record["Quantity"]}</td>
-                            <td>₹${record["Unit Prize"]}</td>
-                            <td>₹${record["Total Bill"]}</td>
-                            <td><button class="delete-btn" onclick="clearCustomer('${record["Customer_Name"]}')">Clear</button></td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No records found</td></tr>`;
+                if (records.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">No records found</td></tr>`;
+                    return;
                 }
-            } catch (error) {
-                console.error("Failed to fetch records", error);
-            }
-        }
 
-        async function clearCustomer(customerName) {
-            if (!confirm(`Are you sure you want to clear all bills for ${customerName}?`)) return;
-
-            try {
-                const response = await fetch(`${API_URL}/Clear_Credit/${encodeURIComponent(customerName)}`, {
-                    method: "DELETE"
+                records.forEach((record, index) => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${record.Customer_Name || record[0]}</td>
+                        <td>${record.Product_Name || record[1]}</td>
+                        <td>${record.Quantity || record[2]}</td>
+                        <td>₹${record.Unit_Prize || record[3]}</td>
+                        <td>₹${record.Total_Bill || record[4]}</td>
+                        <td><button class="delete-btn" onclick="deleteCredit('${record.Customer_Name || record[0]}')">Clear</button></td>
+                    `;
+                    tbody.appendChild(row);
                 });
-                const data = await response.json();
-                alert(data.Message);
-                fetchAllCredits();
             } catch (error) {
-                alert("Failed to clear credit records.");
+                console.error("Error fetching credits:", error);
             }
         }
 
-        // Automatically fetch records when the page loads
+        async function deleteCredit(customerName) {
+            // Optional: Implement your delete/clear logic route here if available
+            alert("Clear feature coming for: " + customerName);
+        }
+
+        // Load credits automatically when the page opens
         window.onload = fetchAllCredits;
     </script>
 </body>
