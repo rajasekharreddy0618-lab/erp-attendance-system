@@ -24,6 +24,7 @@
             border-radius: 8px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
             width: 100%;
+            overflow: hidden; 
         }
         
         input, button { 
@@ -62,7 +63,6 @@
         }
         .delete-btn:hover { background: #ef4444; }
         
-        /* Responsive Table Container */
         .table-responsive {
             width: 100%;
             overflow-x: auto;
@@ -73,158 +73,57 @@
         table { 
             width: 100%; 
             border-collapse: collapse; 
-            min-width: 600px; 
+            min-width: 550px; 
         }
         
         th, td { 
             border: 1px solid #334155; 
-            padding: 10px; 
+            padding: 8px; 
             text-align: left; 
             font-size: 0.85rem;
             color: #f1f5f9;
-            background: #1e293b;
         }
         
         th { background-color: #334155; }
-
-        @media (min-width: 600px) {
-            body { padding: 30px; }
-            h1 { font-size: 2rem; }
-            .card { padding: 20px; }
-        }
     </style>
 </head>
 <body>
 
-    <h1>🛒 Shop CreditTrack Dashboard</h1>
-
-    <!-- Add Credit Form -->
     <div class="card">
-        <h2>Add Credit Entry</h2>
-        <input type="text" id="customerName" placeholder="Customer Name (e.g. Raju)">
-        <input type="text" id="productName" placeholder="Product Name (e.g. Milk)">
-        <input type="number" id="quantity" placeholder="Quantity (e.g. 1)" min="1">
-        <input type="number" id="unitPrice" placeholder="Unit Price in ₹ (e.g. 10)" step="0.1">
-        <button onclick="addCredit()">Save Credit</button>
-        <p id="addResponse" style="font-weight: bold; margin-top: 10px;"></p>
-    </div>
-
-    <!-- View & Clear Credits -->
-    <div class="card">
-        <h2>All Active Credits</h2>
-        <button onclick="fetchAllCredits()">🔄 Refresh List</button>
-        <div class="table-responsive">
-            <table id="creditTable">
-                <thead>
-                    <tr>
-                        <th>Customer</th>
-                        <th>Product</th>
-                        <th>Quantity</th>
-                        <th>Unit Price</th>
-                        <th>Total Bill</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be injected dynamically -->
-                </tbody>
-            </table>
-        </div>
+        <h1>Shop Credit Ledger</h1>
+        <p>Manage customer credits easily.</p>
+        
+        <!-- Example Form Input -->
+        <input type="text" id="customerName" placeholder="Customer Name">
+        <input type="number" id="creditAmount" placeholder="Amount">
+        <button onclick="addCredit()">Add Credit Entry</button>
+        
+        <div id="response"></div>
     </div>
 
     <script>
-        // Replace with your live Render backend URL
+        // Replace this URL with your actual live Render backend URL once ready!
         const API_URL = "https://shop-credit-backend.onrender.com";
 
         async function addCredit() {
-            const customer = document.getElementById("customerName").value.trim();
-            const product = document.getElementById("productName").value.trim();
-            const quantity = document.getElementById("quantity").value;
-            const unitPrice = document.getElementById("unitPrice").value;
-            const responseMessage = document.getElementById("addResponse");
-
-            if (!customer || !product || !quantity || !unitPrice) {
-                responseMessage.style.color = "#f87171";
-                responseMessage.innerText = "Please fill in all fields!";
-                return;
-            }
+            const name = document.getElementById('customerName').value;
+            const amount = document.getElementById('creditAmount').value;
 
             try {
-                const response = await fetch(`${API_URL}/Calculate_Bill`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        Customer_Name: customer,
-                        Product_Name: product,
-                        Quantity: parseInt(quantity),
-                        Unit_Prize: parseFloat(unitPrice)
-                    })
+                // Change '/add-credit' to match whatever route path you defined in your FastAPI code!
+                const response = await fetch(`${API_URL}/add-credit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customer_name: name, amount: parseFloat(amount) })
                 });
-
-                if (response.ok) {
-                    responseMessage.style.color = "#38bdf8";
-                    responseMessage.innerText = "Credit recorded successfully!";
-                    
-                    // Clear inputs
-                    document.getElementById("customerName").value = "";
-                    document.getElementById("productName").value = "";
-                    document.getElementById("quantity").value = "";
-                    document.getElementById("unitPrice").value = "";
-
-                    // Automatically refresh the table to display the new entry instantly
-                    fetchAllCredits();
-                } else {
-                    responseMessage.style.color = "#f87171";
-                    responseMessage.innerText = "Failed to record credit. Try again.";
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                responseMessage.style.color = "#f87171";
-                responseMessage.innerText = "Connection error to backend!";
-            }
-        }
-
-        async function fetchAllCredits() {
-            try {
-                const response = await fetch(`${API_URL}/Get_all_credits`);
-                const data = await response.json();
                 
-                const tbody = document.querySelector("#creditTable tbody");
-                tbody.innerHTML = "";
-
-                const records = data["All crdeits"] || data.credits || [];
-
-                if (records.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center;">No records found</td></tr>`;
-                    return;
-                }
-
-                records.forEach((record, index) => {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td>${record.Customer_Name || record[0]}</td>
-                        <td>${record.Product_Name || record[1]}</td>
-                        <td>${record.Quantity || record[2]}</td>
-                        <td>₹${record.Unit_Prize || record[3]}</td>
-                        <td>₹${record.Total_Bill || record[4]}</td>
-                        <td><button class="delete-btn" onclick="deleteCredit('${record.Customer_Name || record[0]}')">Clear</button></td>
-                    `;
-                    tbody.appendChild(row);
-                });
+                const data = await response.json();
+                document.getElementById('response').innerText = "Success: " + JSON.stringify(data);
             } catch (error) {
-                console.error("Error fetching credits:", error);
+                document.getElementById('response').style.color = "red";
+                document.getElementById('response').innerText = "Error connecting to backend!";
             }
         }
-
-        async function deleteCredit(customerName) {
-            // Optional: Implement your delete/clear logic route here if available
-            alert("Clear feature coming for: " + customerName);
-        }
-
-        // Load credits automatically when the page opens
-        window.onload = fetchAllCredits;
     </script>
 </body>
 </html>
