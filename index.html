@@ -129,47 +129,54 @@
         const API_URL = "https://shop-credit-backend.onrender.com";
 
         async function addCredit() {
-            const customer = document.getElementById("customerName").value;
-            const product = document.getElementById("productName").value;
-            const qty = parseInt(document.getElementById("quantity").value);
-            const price = parseFloat(document.getElementById("unitPrice").value);
-            const msgEl = document.getElementById("addResponse");
+    const customer = document.getElementById("customerName").value.trim();
+    const product = document.getElementById("productName").value.trim();
+    const quantity = document.getElementById("quantity").value;
+    const unitPrice = document.getElementById("unitPrice").value;
+    const responseMessage = document.getElementById("addResponse");
 
-            const payload = {
-                "Customer_Name": customer,
-                "Total_List": [
-                    {
-                        "product_Name": product,
-                        "Quantity": qty,
-                        "Unit_prize": price
-                    }
-                ]
-            };
+    if (!customer || !product || !quantity || !unitPrice) {
+        responseMessage.style.color = "#f87171";
+        responseMessage.innerText = "Please fill in all fields!";
+        return;
+    }
 
-            try {
-                const response = await fetch(`${API_URL}/Calculate_Bill`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                const data = await response.json();
+    try {
+        const response = await fetch(`${API_URL}/Calculate_Bill`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                Customer_Name: customer,
+                Product_Name: product,
+                Quantity: parseInt(quantity),
+                Unit_Prize: parseFloat(unitPrice)
+            })
+        });
 
-                if (response.ok) {
-                    msgEl.style.color = "green";
-                    msgEl.innerText = "Credit recorded successfully!";
-                    document.getElementById("customerName").value = "";
-                    document.getElementById("productName").value = "";
-                    fetchAllCredits();
-                } else {
-                    msgEl.style.color = "red";
-                    msgEl.innerText = "Error: " + JSON.stringify(data.detail || data);
-                }
-            } catch (error) {
-                msgEl.style.color = "red";
-                msgEl.innerText = "Connection failed to backend!";
-            }
+        if (response.ok) {
+            responseMessage.style.color = "#38bdf8";
+            responseMessage.innerText = "Credit recorded successfully!";
+            
+            // Clear input fields after saving
+            document.getElementById("customerName").value = "";
+            document.getElementById("productName").value = "";
+            document.getElementById("quantity").value = "";
+            document.getElementById("unitPrice").value = "";
+
+            // 🚀 AUTOMATICALLY REFRESH THE TABLE TO SHOW THE NEW RECORD INSTANTLY
+            fetchAllCredits();
+        } else {
+            responseMessage.style.color = "#f87171";
+            responseMessage.innerText = "Failed to record credit. Try again.";
         }
-
+    } catch (error) {
+        console.error("Error:", error);
+        responseMessage.style.color = "#f87171";
+        responseMessage.innerText = "Connection error to backend!";
+    }
+}
         async function fetchAllCredits() {
             try {
                 const response = await fetch(`${API_URL}/Get_all_credits`);
