@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-API_BASE_URL = "http://127.0.0.1:8000"
+API_BASE_URL = st.secrets.get("BACKEND_URL", "https://erp-attendance-system.onrender.com")
 
 st.set_page_config(page_title="ERP Attendance System", page_icon="📊", layout="wide")
 
