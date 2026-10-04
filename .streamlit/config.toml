@@ -1,0 +1,7 @@
+[theme]
+base = "light"
+primaryColour = "#2563EB"               # Vibrant blue accent
+backgroundColour = "#FFFFFF"            # Pure white background
+secondaryBackgroundColour = "#F1F5F9"   
+textColour = "#0F172A"                  # Slate text
+font = "sans serif"
